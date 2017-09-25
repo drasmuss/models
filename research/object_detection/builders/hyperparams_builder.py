@@ -70,13 +70,14 @@ def build(hyperparams_config, is_training):
           hyperparams_config.regularizer),
       weights_initializer=_build_initializer(
           hyperparams_config.initializer),
-      activation_fn=_build_activation_fn(hyperparams_config.activation),
+      activation_fn=_build_activation_fn(
+          hyperparams_config.activation, noise=hyperparams_config.noise),
       normalizer_fn=batch_norm,
       normalizer_params=batch_norm_params) as sc:
     return sc
 
 
-def _build_activation_fn(activation_fn):
+def _build_activation_fn(activation_fn, noise=0):
   """Builds a callable activation from config.
 
   Args:
@@ -88,13 +89,22 @@ def _build_activation_fn(activation_fn):
   Raises:
     ValueError: On unknown activation function.
   """
+
   if activation_fn == hyperparams_pb2.Hyperparams.NONE:
-    return None
-  if activation_fn == hyperparams_pb2.Hyperparams.RELU:
-    return tf.nn.relu
-  if activation_fn == hyperparams_pb2.Hyperparams.RELU_6:
-    return tf.nn.relu6
-  raise ValueError('Unknown activation function: {}'.format(activation_fn))
+    act = None
+  elif activation_fn == hyperparams_pb2.Hyperparams.RELU:
+    act = tf.nn.relu
+  elif activation_fn == hyperparams_pb2.Hyperparams.RELU_6:
+    act = tf.nn.relu6
+  else:
+    raise ValueError('Unknown activation function: {}'.format(activation_fn))
+
+  if noise > 0:
+    noisy_act = lambda x: act(x) + tf.random_normal(tf.shape(x), stddev=noise)
+  else:
+    noisy_act = act
+
+  return noisy_act
 
 
 def _build_regularizer(regularizer):

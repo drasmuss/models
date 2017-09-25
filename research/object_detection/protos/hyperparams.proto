@@ -38,6 +38,8 @@ message Hyperparams {
   // BatchNorm hyperparameters. If this parameter is NOT set then BatchNorm is
   // not applied!
   optional BatchNorm batch_norm = 5;
+
+  optional float noise = 6 [default = 0];
 }
 
 // Proto with one-of field for regularizers.
