@@ -264,14 +264,15 @@ def visualize_detection_results(result_dict,
     export_path = os.path.join(export_dir, 'export-{}.png'.format(tag))
     vis_utils.save_image_array_as_png(image, export_path)
 
-  summary = tf.Summary(value=[
-      tf.Summary.Value(tag=tag, image=tf.Summary.Image(
-          encoded_image_string=vis_utils.encode_image_array_as_png_str(
-              image)))
-  ])
-  summary_writer = tf.summary.FileWriter(summary_dir)
-  summary_writer.add_summary(summary, global_step)
-  summary_writer.close()
+  if summary_dir:
+      summary = tf.Summary(value=[
+          tf.Summary.Value(tag=tag, image=tf.Summary.Image(
+              encoded_image_string=vis_utils.encode_image_array_as_png_str(
+                  image)))
+      ])
+      summary_writer = tf.summary.FileWriter(summary_dir)
+      summary_writer.add_summary(summary, global_step)
+      summary_writer.close()
 
   logging.info('Detection visualizations written to summary with tag %s.', tag)
 
