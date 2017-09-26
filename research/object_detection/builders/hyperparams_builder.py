@@ -71,13 +71,15 @@ def build(hyperparams_config, is_training):
       weights_initializer=_build_initializer(
           hyperparams_config.initializer),
       activation_fn=_build_activation_fn(
-          hyperparams_config.activation, noise=hyperparams_config.noise),
+          hyperparams_config.activation, noise=hyperparams_config.noise,
+          spiking=hyperparams_config.spiking,
+          filter=hyperparams_config.filter),
       normalizer_fn=batch_norm,
       normalizer_params=batch_norm_params) as sc:
     return sc
 
 
-def _build_activation_fn(activation_fn, noise=0):
+def _build_activation_fn(activation_fn, noise=0, spiking=None, filter=0):
   """Builds a callable activation from config.
 
   Args:
@@ -89,6 +91,7 @@ def _build_activation_fn(activation_fn, noise=0):
   Raises:
     ValueError: On unknown activation function.
   """
+  from abr_vision import nonlinearities
 
   if activation_fn == hyperparams_pb2.Hyperparams.NONE:
     act = None
@@ -100,11 +103,18 @@ def _build_activation_fn(activation_fn, noise=0):
     raise ValueError('Unknown activation function: {}'.format(activation_fn))
 
   if noise > 0:
-    noisy_act = lambda x: act(x) + tf.random_normal(tf.shape(x), stddev=noise)
-  else:
-    noisy_act = act
+    act = lambda x, act=act: act(x) + tf.random_normal(tf.shape(x),
+                                                       stddev=noise)
 
-  return noisy_act
+  if spiking == hyperparams_pb2.Hyperparams.POISSON:
+    act = lambda x, act=act: nonlinearities.poisson_spiking(act(x), scale=100)
+  elif spiking == hyperparams_pb2.Hyperparams.REGULAR:
+    act = lambda x, act=act: nonlinearities.regular_spiking(act(x), scale=100)
+
+  if filter > 0:
+    act = lambda x, act=act: nonlinearities.lowpass(act(x), filter)
+
+  return act
 
 
 def _build_regularizer(regularizer):

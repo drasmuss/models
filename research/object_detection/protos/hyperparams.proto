@@ -40,6 +40,17 @@ message Hyperparams {
   optional BatchNorm batch_norm = 5;
 
   optional float noise = 6 [default = 0];
+
+  enum Spiking {
+    RATE = 0;
+
+    POISSON = 1;
+
+    REGULAR = 2;
+  }
+  optional Spiking spiking = 7 [default = RATE];
+
+  optional float filter = 8 [default = 0];
 }
 
 // Proto with one-of field for regularizers.
