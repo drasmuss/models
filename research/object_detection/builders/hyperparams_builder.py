@@ -73,13 +73,15 @@ def build(hyperparams_config, is_training):
       activation_fn=_build_activation_fn(
           hyperparams_config.activation, noise=hyperparams_config.noise,
           spiking=hyperparams_config.spiking,
-          filter=hyperparams_config.filter),
+          filter=hyperparams_config.filter,
+          dt=hyperparams_config.dt),
       normalizer_fn=batch_norm,
       normalizer_params=batch_norm_params) as sc:
     return sc
 
 
-def _build_activation_fn(activation_fn, noise=0, spiking=None, filter=0):
+def _build_activation_fn(activation_fn, noise=0, spiking=None, filter=0,
+                         dt=0.001):
   """Builds a callable activation from config.
 
   Args:
@@ -107,12 +109,14 @@ def _build_activation_fn(activation_fn, noise=0, spiking=None, filter=0):
                                                        stddev=noise)
 
   if spiking == hyperparams_pb2.Hyperparams.POISSON:
-    act = lambda x, act=act: nonlinearities.poisson_spiking(act(x), scale=100)
+    act = lambda x, act=act: nonlinearities.poisson_spiking(act(x), scale=100,
+                                                            dt=dt)
   elif spiking == hyperparams_pb2.Hyperparams.REGULAR:
-    act = lambda x, act=act: nonlinearities.regular_spiking(act(x), scale=100)
+    act = lambda x, act=act: nonlinearities.regular_spiking(act(x), scale=100,
+                                                            dt=dt)
 
   if filter > 0:
-    act = lambda x, act=act: nonlinearities.lowpass(act(x), filter)
+    act = lambda x, act=act: nonlinearities.lowpass(act(x), filter, dt=dt)
 
   return act
 

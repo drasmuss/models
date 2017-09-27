@@ -51,6 +51,8 @@ message Hyperparams {
   optional Spiking spiking = 7 [default = RATE];
 
   optional float filter = 8 [default = 0];
+
+  optional float dt = 9 [default = 0.001];
 }
 
 // Proto with one-of field for regularizers.
