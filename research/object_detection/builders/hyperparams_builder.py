@@ -105,8 +105,10 @@ def _build_activation_fn(activation_fn, noise=0, spiking=None, filter=0,
     raise ValueError('Unknown activation function: {}'.format(activation_fn))
 
   if noise > 0:
-    act = lambda x, act=act: act(x) + tf.random_normal(tf.shape(x),
-                                                       stddev=noise)
+    def act(x, act=act):
+      activity = act(x)
+      return tf.where(activity <= 1e-10, activity, tf.maximum(
+        activity + tf.random_normal(tf.shape(x), stddev=noise), 0))
 
   if spiking == hyperparams_pb2.Hyperparams.POISSON:
     act = lambda x, act=act: nonlinearities.poisson_spiking(act(x), scale=100,
