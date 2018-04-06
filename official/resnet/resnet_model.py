@@ -82,7 +82,7 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format):
   """Strided 2-D convolution with explicit padding."""
   # The padding is consistent and is based only on `kernel_size`, not on the
   # dimensions of `inputs` (as opposed to using `tf.layers.conv2d` alone).
-  if strides > 1:
+  if isinstance(strides, (list, tuple)) or strides > 1:
     inputs = fixed_padding(inputs, kernel_size, data_format)
 
   return tf.layers.conv2d(
@@ -326,6 +326,12 @@ def block_layer(inputs, filters, bottleneck, block_fn, blocks, strides,
     The output tensor of the block layer.
   """
 
+  print("creating %s" % name)
+  print("input shape", inputs.get_shape())
+  print("filters", filters)
+  print("strides", strides)
+  print("n_blocks", blocks)
+
   # Bottleneck blocks end with 4x the number of filters as they start with
   filters_out = filters * 4 if bottleneck else filters
 
@@ -350,8 +356,8 @@ class Model(object):
   def __init__(self, resnet_size, bottleneck, num_classes, num_filters,
                kernel_size,
                conv_stride, first_pool_size, first_pool_stride,
-               second_pool_size, second_pool_stride, block_sizes, block_strides,
-               final_size, version=DEFAULT_VERSION, data_format=None):
+               block_sizes, block_strides, version=DEFAULT_VERSION,
+               data_format=None):
     """Creates a model for classifying an image.
 
     Args:
@@ -413,11 +419,11 @@ class Model(object):
     self.conv_stride = conv_stride
     self.first_pool_size = first_pool_size
     self.first_pool_stride = first_pool_stride
-    self.second_pool_size = second_pool_size
-    self.second_pool_stride = second_pool_stride
+    # self.second_pool_size = second_pool_size
+    # self.second_pool_stride = second_pool_stride
     self.block_sizes = block_sizes
     self.block_strides = block_strides
-    self.final_size = final_size
+    # self.final_size = final_size
 
   def __call__(self, inputs, training):
     """Add operations to classify a batch of input images.
@@ -469,7 +475,8 @@ class Model(object):
     inputs = tf.reduce_mean(inputs, axes, keepdims=True)
     inputs = tf.identity(inputs, 'final_reduce_mean')
 
-    inputs = tf.reshape(inputs, [-1, self.final_size])
+    inputs = tf.layers.flatten(inputs)
+    inputs = tf.layers.dropout(inputs, 0.5, training=training)
     inputs = tf.layers.dense(inputs=inputs, units=self.num_classes)
     inputs = tf.identity(inputs, 'final_dense')
 
